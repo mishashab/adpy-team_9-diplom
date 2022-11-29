@@ -36,7 +36,7 @@ class VKinder:
             find_users.append({'name': f"{fined_user['first_name']} "
                                        f"{fined_user['last_name']}",
                                'url': f"https://vk.com/id{fined_user['id']}",
-                               'attachment': attachment})
+                               'attachment': attachment, 'id': fined_user['id']})
 
         # pprint(find_users)
         return find_users
