@@ -12,7 +12,7 @@ from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.utils import get_random_id
 
 
-def write_message(authorize, sender, message, attachment=0):
+def write_message(authorize, sender, message, attachment=''):
     #messages.send - название метода отправки сообщений. user_id - id пользователя
     # message - текст сообщения.  random_id - случайный идентификационный номер сообщения, чтобы одно сообщение не отправлялось дважды
     authorize.method('messages.send', {'user_id': sender, 'message': message, "random_id": get_random_id(),
@@ -34,6 +34,9 @@ def main():
     session = user_session.get_api()
 
     #бесконечный цикл, коотрые слушает сообщения от сервера ВК
+    counter = 0
+    user_param = dict()
+    result = list()
     for event in longpoll.listen():
         # проверяет тип события и точто оно отправлено боту и то что оно текст
         if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
@@ -43,7 +46,6 @@ def main():
             sender_id = event.user_id
             # user = session.users.get(user_id=sender_id)
             user_info = session.account.getProfileInfo(user_id=sender_id)
-            user_param = {}
             user_param['age'] = calculate_age(user_info['bdate'])
             if user_info['sex'] == 2:
                 gender = 'Мужской'
@@ -60,13 +62,25 @@ def main():
                 write_message(authorize, sender_id, f"Доброго времени суток, {user_info['first_name']}!\n"
                                                     f"Ваши параметры:\nГород: {user_info['city']['title']}\n"
                                                     f"Пол: {gender}\nВозраст: {user_param['age']}\nИщем?")
-            elif reseived_message.lower() in ['да', 'ищем', 'начали', 'ok', 'ок', 'yes', 'поехали']:
+            elif reseived_message.lower() in ['да', 'ищем', 'начали', 'ok', 'ок', 'yes', 'поехали'] and counter == 0:
+                # if counter == 0:
                 write_message(authorize, sender_id, f"Ищу...")
                 v_kinder = VKinder(longpoll, session)
-                #делаем поиск с помошью метода find_user класса VKinder
                 result = v_kinder.find_user(user_param)
-                write_message(authorize, sender_id, f"{result[0]['name']}\n{result[0]['url']}")
-                pprint(result)
+                # print(len(result))
+                write_message(authorize, sender_id, f"{result[counter]['name']}\n{result[counter]['url']}",
+                              result[counter]['attachment'])
+                write_message(authorize, sender_id, "Дальше?")
+                counter += 1
+            elif reseived_message.lower() in ['дальше', 'да'] and counter < len(result):
+                write_message(authorize, sender_id, f"{result[counter]['name']}\n{result[counter]['url']}",
+                              result[counter]['attachment'])
+                write_message(authorize, sender_id, "Дальше?")
+                counter += 1
+            elif len(result) <= counter:
+                # print(counter)
+                # print(len(result))
+                write_message(authorize, sender_id, "Список закончился!")
             elif reseived_message.lower() == "пока":
                 write_message(authorize, sender_id, "До свидания!")
             else:
