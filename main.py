@@ -25,22 +25,15 @@ def calculate_age(born):
     return today.year - int(born[2]) - ((today.month, today.day) < (int(born[1]), int(born[0])))
 
 
-def db_list_to_dict(db_list):
-    db_dict = dict()
-    db_source = list()
-    counter = -1
-    for item in db_list:
-        if item[0] in db_source:
-            print(f'Зашел добавить!')
-            db_source[counter]['photo'].append(item[4])
+def get_str(url_photos):
+    '''Собираем из списка tuple строку для бота'''
+    str_photo = ''
+    for item in url_photos:
+        if not str_photo:
+            str_photo = item[0]
         else:
-            db_dict['name'] = f'{item[1]} {item[2]}'
-            db_dict['url'] = item[3]
-            db_dict['photo'] = item[4]
-            db_source.append(db_dict)
-            counter += 1
-
-    return db_source
+            str_photo += f',{item[0]}'
+    return str_photo
 
 
 def main():
@@ -51,7 +44,7 @@ def main():
     user_session = vk_api.VkApi(token=user_token)
     session = user_session.get_api()
 
-    conn = psycopg2.connect(database="course_w", user="postgres", password="")
+    conn = psycopg2.connect(database="course_w", user="postgres", password="netologyAL")
     with conn.cursor() as cur:
         # print(DB.drop_table(cur))
         print(DB.create_db(cur))
@@ -59,7 +52,7 @@ def main():
         #бесконечный цикл, коотрые слушает сообщения от сервера ВК
         flag = 0
         ask_user = dict()
-        result = list()
+
         for event in longpoll.listen():
             # проверяет тип события и точто оно отправлено боту и то что оно текст
             if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
@@ -106,6 +99,7 @@ def main():
                     v_kinder = VKinder(longpoll, session)
                     result = v_kinder.find_user(ask_user)
 
+                    #Пишет в базу данных
                     for i_user in result:
                         if not DB.check_find_user(cur, i_user['id']):
                             if DB.add_find_users(cur, i_user['id'], ask_user[0], i_user['first_name'],
@@ -114,34 +108,38 @@ def main():
                             for item in i_user['attachment']:
                                 if DB.add_find_users_photos(cur, i_user['id'], item):
                                     print('Фото добавлены')
-                        else:
-                            print(f'User {i_user["id"]} присутствует в базе')
-                            # print(i_user['attachment'])
+                        # else:
+                        #     print(f'User {i_user["id"]} присутствует в базе')
                     conn.commit()
-                    # write_message(authorize, sender_id, f"{result[counter]['name']}\n{result[counter]['url']}",
-                    #               result[counter]['attachment'])
                     write_message(authorize, sender_id, "Данные записаны в базу. Смотрим?")
-                    # pprint(result)
+
                 elif reseived_message.lower() in ['смотрим', 'просмотр', 'просмотр', 'просмотрим']:
+                    #Достает из базы данные
                     if DB.check_find_user(cur, ask_user[0]):
+                        users = list()
+                        counter = 0
                         db_source = DB.get_find_users(cur, ask_user[0])
-        #ЗАСТРЯЛ ТУТ!!!
-                        db_source = db_list_to_dict(db_source)
-                        print('Данные записаны в словарь')
-                        pprint(db_source)
+                        for item in db_source:
+                            users.append({'name': f'{item[1]} {item[2]}', 'url': item[3],
+                                          'attachment':  get_str(DB.get_photo(cur, item[0]))})
+
+                        write_message(authorize, sender_id, f"{users[counter]['name']}\n{users[counter]['url']}",
+                                      users[counter]['attachment'])
+                        write_message(authorize, sender_id, 'Дальше?')
+                        counter += 1
                     else:
                         print('База пустая')
                         write_message(authorize, sender_id, "База пустая, выполните поиск")
 
-                # elif reseived_message.lower() in ['дальше', 'да'] and counter < len(result):
-                #     write_message(authorize, sender_id, f"{result[counter]['name']}\n{result[counter]['url']}",
-                #                   result[counter]['attachment'])
-                #     write_message(authorize, sender_id, "Дальше?")
-                #     counter += 1
-                # elif len(result) <= counter:
-                #     write_message(authorize, sender_id, "Список закончился!")
-                # elif reseived_message.lower() == "пока":
-                #     write_message(authorize, sender_id, "До свидания!")
+                elif reseived_message.lower() in 'дальше' and counter != 0 and counter != len(users):
+                    write_message(authorize, sender_id, f"{users[counter]['name']}\n{users[counter]['url']}",
+                                  users[counter]['attachment'])
+                    write_message(authorize, sender_id, 'Дальше?')
+                    counter += 1
+
+                elif counter >= len(users):
+                    write_message(authorize, sender_id, 'База данных закончилась. Смотрим заново?')
+
                 else:
                     write_message(authorize, sender_id, "Я вас не понимаю...")
 
