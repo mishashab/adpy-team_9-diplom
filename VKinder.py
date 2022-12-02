@@ -9,9 +9,16 @@ class VKinder:
 
     def _search(self, user_param):
         '''Грязный первоначальный поис'''
+        if user_param[6] == 'Мужской':
+            sex = 1
+        elif user_param[6] == 'Женский':
+            sex = 2
+        else:
+            sex = 0
+
         result = self.session.users.search(count=5, blacklisted_by_me=0, fields=['photo_id', 'sex', 'bdate', 'city'],
-                                           city=user_param['city_id'], sex=user_param['gender'],
-                                           age_from=user_param['age'], age_to=user_param['age'], has_photo=1,
+                                           city=user_param[5], sex=sex,
+                                           age_from=user_param[3], age_to=user_param[3], has_photo=1,
                                            is_closed=False, can_access_closed=True)['items']
         return result
 
@@ -24,8 +31,8 @@ class VKinder:
         attachment_list = list()
         for item in photo_list:
             attachment_list.append(f'photo{user_id}_{item["id"]}')
-        attachment = ','.join(attachment_list)
-        return attachment
+        # attachment = ','.join(attachment_list)
+        return attachment_list
 
     def find_user(self, user_param):
         '''выборка по параметрам'''
@@ -33,10 +40,9 @@ class VKinder:
         find_users = list()
         for fined_user in search_users_dict:
             attachment = self._find_photo(fined_user['id'])
-            find_users.append({'name': f"{fined_user['first_name']} "
-                                       f"{fined_user['last_name']}",
+            find_users.append({'first_name': fined_user['first_name'], 'last_name': fined_user['last_name'],
                                'url': f"https://vk.com/id{fined_user['id']}",
                                'attachment': attachment, 'id': fined_user['id']})
 
-        # pprint(find_users)
+        # pprint(search_users_dict)
         return find_users
