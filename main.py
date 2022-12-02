@@ -44,15 +44,15 @@ def main():
     user_session = vk_api.VkApi(token=user_token)
     session = user_session.get_api()
 
-    conn = psycopg2.connect(database="course_w", user="postgres", password="netologyAL")
+    conn = psycopg2.connect(database="course_w", user="postgres", password="")
     with conn.cursor() as cur:
         # print(DB.drop_table(cur))
         print(DB.create_db(cur))
 
         #бесконечный цикл, коотрые слушает сообщения от сервера ВК
-        flag = 0
+        counter = 0
         ask_user = dict()
-
+        users = list()
         for event in longpoll.listen():
             # проверяет тип события и точто оно отправлено боту и то что оно текст
             if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
@@ -116,20 +116,25 @@ def main():
                 elif reseived_message.lower() in ['смотрим', 'просмотр', 'просмотр', 'просмотрим']:
                     #Достает из базы данные
                     if DB.check_find_user(cur, ask_user[0]):
-                        users = list()
                         counter = 0
                         db_source = DB.get_find_users(cur, ask_user[0])
                         for item in db_source:
-                            users.append({'name': f'{item[1]} {item[2]}', 'url': item[3],
+                            users.append({'id': item[0],'name': f'{item[1]} {item[2]}', 'url': item[3],
                                           'attachment':  get_str(DB.get_photo(cur, item[0]))})
 
                         write_message(authorize, sender_id, f"{users[counter]['name']}\n{users[counter]['url']}",
                                       users[counter]['attachment'])
-                        write_message(authorize, sender_id, 'Дальше?')
+                        write_message(authorize, sender_id, 'Дальше? или в избранное?')
                         counter += 1
                     else:
                         print('База пустая')
                         write_message(authorize, sender_id, "База пустая, выполните поиск")
+
+                elif reseived_message.lower() in ['в избранное', 'избранное']:
+                    if DB.add_favourites(cur, users[counter - 1]['id']):
+                        conn.commit()
+                        print('Добавлено в избранное')
+                        write_message(authorize, sender_id, "Добавлено в избранное. Дальше?")
 
                 elif reseived_message.lower() in 'дальше' and counter != 0 and counter != len(users):
                     write_message(authorize, sender_id, f"{users[counter]['name']}\n{users[counter]['url']}",
@@ -137,7 +142,7 @@ def main():
                     write_message(authorize, sender_id, 'Дальше?')
                     counter += 1
 
-                elif counter >= len(users):
+                elif counter >= len(users) and counter != 0:
                     write_message(authorize, sender_id, 'База данных закончилась. Смотрим заново?')
 
                 else:

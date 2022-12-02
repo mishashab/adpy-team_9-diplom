@@ -87,7 +87,7 @@ def check_find_user(cur, user_id):
 def get_find_users(cur, user_id):
     cur.execute('''
         SELECT f_user_id, f_first_name, f_last_name, user_url FROM find_users
-        WHERE user_id = %s;
+        WHERE user_id = %s AND favourites IS NOT true;
     ''', (user_id,))
     return cur.fetchall()
 
@@ -112,8 +112,17 @@ def add_find_users_photos(cur, f_user_id, photo_str):
     return cur.fetchone()
 
 
-# def count_data(cur):
+def add_favourites(cur, f_user_id):
+    cur.execute('''
+        UPDATE find_users SET favourites = %s WHERE f_user_id = %s;
+    ''', ('true', f_user_id))
+    cur.execute('''
+        SELECT favourites FROM find_users
+        WHERE f_user_id = %s
+    ''', (f_user_id,))
+    return cur.fetchone()
+
+# def get_favourites(cur, user_id):
 #     cur.execute('''
-#         SELECT COUNT(user_id) FROM find_users
+#         SELECT
 #     ''')
-#     return cur.fetchone()
