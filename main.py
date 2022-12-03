@@ -108,9 +108,10 @@ def main():
                         favourites = data_conversion(db_source, cur)
                         for item in favourites:
                             write_message(authorize, sender_id, f"{item['name']}\n{item['url']}", item['attachment'])
-                        write_message(authorize, sender_id, "Смотрим базу? Выполнить поиск?")
+                        write_message(authorize, sender_id, "Смотрим базу? Выполнить поиск?(смотрим/поиск)")
                     else:
-                        write_message(authorize, sender_id, f"Избранное пусто. Выпольните поиск или загрузите базу.")
+                        write_message(authorize, sender_id, f"Избранное пусто. Выпольните поиск или загрузите базу."
+                                                            f"(поиск/загрузить)")
 
                 elif reseived_message.lower() in ['ищем', 'поиск', 'выполнить', 'выполнить поиск']:
 
@@ -133,11 +134,11 @@ def main():
                             # else:
                             #     print(f'User {i_user["id"]} присутствует в базе')
                         conn.commit()
-                        write_message(authorize, sender_id, "Данные записаны в базу. Смотрим?")
+                        write_message(authorize, sender_id, "Данные записаны в базу. Смотрим?(да)")
                     else:
-                        write_message(authorize, sender_id, "База данных не пустая. Посмотрим?(да/ смотреть избранное)")
+                        write_message(authorize, sender_id, "База данных не пустая. Посмотрим?(да/смотреть избранное)")
 
-                elif reseived_message.lower() in ['смотрим', 'просмотр', 'просмотр', 'просмотрим', 'да', 'дальше']:
+                elif reseived_message.lower() in ['смотрим', 'смотреть', 'просмотр', 'загрузить', 'да', 'дальше']:
                     #Достает из базы данные
                     if DB.check_find_user(cur, ask_user[0]): # проверяет наличие базы
                         if counter < DB.count_db(cur)[0]:
@@ -152,7 +153,7 @@ def main():
                                              'attachment': get_str(DB.get_photo(cur, db_source[0]))}
                                     write_message(authorize, sender_id, f"{users['name']}\n{users['url']}",
                                                   users['attachment'])
-                                    write_message(authorize, sender_id, 'Дальше? или в избранное?(в избранное)(Дальше)')
+                                    write_message(authorize, sender_id, 'Дальше? или в избранное?(да/в избранное)')
                                     flag = False
                                     print("IF")
                                 counter += 1
@@ -168,7 +169,7 @@ def main():
                     if DB.add_favourites(cur, users['id']):
                         conn.commit()
                         print('Добавлено в избранное')
-                        write_message(authorize, sender_id, "Добавлен в избранное. Дальше?")
+                        write_message(authorize, sender_id, "Добавлен в избранное. Дальше?(да/смотреть избранное)")
 
                 else:
                     write_message(authorize, sender_id, "Я вас не понимаю...")
