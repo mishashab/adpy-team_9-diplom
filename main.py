@@ -62,7 +62,7 @@ def main():
         ask_user = dict()
         users = list()
         for event in longpoll.listen():
-            # проверяет тип события и точто оно отправлено боту и то что оно текст
+            # проверяет тип события и то что оно отправлено боту и то что оно текст
             if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
                 reseived_message = event.text
                 # определим вопрошающего
@@ -109,30 +109,34 @@ def main():
                             write_message(authorize, sender_id, f"{item['name']}\n{item['url']}", item['attachment'])
                         write_message(authorize, sender_id, "Смотрим базу? Выполнить поиск?")
                     else:
-                        write_message(authorize, sender_id, f"Избранное пусто. Выпольните поиск или загрузите бауз.")
+                        write_message(authorize, sender_id, f"Избранное пусто. Выпольните поиск или загрузите базу.")
 
                 elif reseived_message.lower() in ['ищем', 'поиск', 'выполнить', 'выполнить поиск']:
 
-                    write_message(authorize, sender_id, f"Ищу...")
+                    if not DB.check_find_user(cur, sender_id):
 
-                    v_kinder = VKinder(longpoll, session)
-                    result = v_kinder.find_user(ask_user)
+                        write_message(authorize, sender_id, f"Ищу...")
 
-                    #Пишет в базу данных
-                    for i_user in result:
-                        if not DB.check_find_user(cur, i_user['id']):
-                            if DB.add_find_users(cur, i_user['id'], ask_user[0], i_user['first_name'],
-                                                 i_user['last_name'],i_user['url']):
-                                print(f"User id={i_user['id']} добавлен")
-                            for item in i_user['attachment']:
-                                if DB.add_find_users_photos(cur, i_user['id'], item):
-                                    print('Фото добавлены')
-                        # else:
-                        #     print(f'User {i_user["id"]} присутствует в базе')
-                    conn.commit()
-                    write_message(authorize, sender_id, "Данные записаны в базу. Смотрим?")
+                        v_kinder = VKinder(longpoll, session)
+                        result = v_kinder.find_user(ask_user)
 
-                elif reseived_message.lower() in ['смотрим', 'просмотр', 'просмотр', 'просмотрим']:
+                        #Пишет в базу данных
+                        for i_user in result:
+                            if not DB.check_find_user(cur, i_user['id']):
+                                if DB.add_find_users(cur, i_user['id'], ask_user[0], i_user['first_name'],
+                                                     i_user['last_name'],i_user['url']):
+                                    print(f"User id={i_user['id']} добавлен")
+                                for item in i_user['attachment']:
+                                    if DB.add_find_users_photos(cur, i_user['id'], item):
+                                        print('Фото добавлены')
+                            # else:
+                            #     print(f'User {i_user["id"]} присутствует в базе')
+                        conn.commit()
+                        write_message(authorize, sender_id, "Данные записаны в базу. Смотрим?")
+                    else:
+                        write_message(authorize, sender_id, "База данных не пустая. Посмотрим?")
+
+                elif reseived_message.lower() in ['смотрим', 'просмотр', 'просмотр', 'просмотрим', 'да']:
                     #Достает из базы данные
                     if DB.check_find_user(cur, ask_user[0]):
                         counter = 0
