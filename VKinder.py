@@ -20,7 +20,7 @@ class VKinder:
                                                                                   'is_closed'],
                                            city=user_param[5], sex=sex,
                                            age_from=user_param[3], age_to=user_param[3], has_photo=1,)['items']
-        pprint(result)
+        # pprint(result)
         return result
 
     def _find_photo(self, user_id):
