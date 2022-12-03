@@ -36,6 +36,14 @@ def get_str(url_photos):
     return str_photo
 
 
+def data_conversion(db_source, cur):
+    '''Преобразует данные из базы данных в нужный для бота вид'''
+    users = list()
+    for item in db_source:
+        users.append({'id': item[0], 'name': f'{item[1]} {item[2]}', 'url': item[3],
+                      'attachment': get_str(DB.get_photo(cur, item[0]))})
+    return users
+
 def main():
     print("Hi bot")
     authorize = vk_api.VkApi(token=bot_token)
@@ -46,7 +54,7 @@ def main():
 
     conn = psycopg2.connect(database="course_w", user="postgres", password="")
     with conn.cursor() as cur:
-        # print(DB.drop_table(cur))
+        # print(DB.drop_table(cur)) # если нужно почистить базу даных
         print(DB.create_db(cur))
 
         #бесконечный цикл, коотрые слушает сообщения от сервера ВК
@@ -90,7 +98,18 @@ def main():
                     write_message(authorize, sender_id, f"Доброго времени суток, {ask_user[1]}!\n"
                                                         f"Ваши параметры:\nГород: {ask_user[4]}\n"
                                                         f"Пол: {ask_user[6]}\nВозраст: {ask_user[3]}\n"
-                                                        f"Поиск или посмотрим базу?")
+                                                        f"Поиск или посмотрим базу? Или смотрим избранное?"
+                                                        f"(смотреть избраноное)")
+
+                elif reseived_message.lower() in ['смотреть избранное']:
+                    if DB.get_favourites(cur, sender_id):
+                        db_source = DB.get_favourites(cur, sender_id)
+                        favourites = data_conversion(db_source, cur)
+                        for item in favourites:
+                            write_message(authorize, sender_id, f"{item['name']}\n{item['url']}", item['attachment'])
+                        write_message(authorize, sender_id, "Смотрим базу? Выполнить поиск?")
+                    else:
+                        write_message(authorize, sender_id, f"Избранное пусто. Выпольните поиск или загрузите бауз.")
 
                 elif reseived_message.lower() in ['ищем', 'поиск', 'выполнить', 'выполнить поиск']:
 
@@ -118,32 +137,34 @@ def main():
                     if DB.check_find_user(cur, ask_user[0]):
                         counter = 0
                         db_source = DB.get_find_users(cur, ask_user[0])
-                        for item in db_source:
-                            users.append({'id': item[0],'name': f'{item[1]} {item[2]}', 'url': item[3],
-                                          'attachment':  get_str(DB.get_photo(cur, item[0]))})
+
+                        users = data_conversion(db_source, cur)# приводим данные из базы к нужному виду
 
                         write_message(authorize, sender_id, f"{users[counter]['name']}\n{users[counter]['url']}",
                                       users[counter]['attachment'])
-                        write_message(authorize, sender_id, 'Дальше? или в избранное?')
+                        write_message(authorize, sender_id, 'Дальше? или в избранное?(в избранное)')
                         counter += 1
                     else:
                         print('База пустая')
                         write_message(authorize, sender_id, "База пустая, выполните поиск")
 
-                elif reseived_message.lower() in ['в избранное', 'избранное']:
+                elif reseived_message.lower() in ['в избранное', 'добавить в избранное']:
+                    #пишем в избранное
                     if DB.add_favourites(cur, users[counter - 1]['id']):
                         conn.commit()
                         print('Добавлено в избранное')
                         write_message(authorize, sender_id, "Добавлено в избранное. Дальше?")
 
                 elif reseived_message.lower() in 'дальше' and counter != 0 and counter != len(users):
+                    #листаем дальше
                     write_message(authorize, sender_id, f"{users[counter]['name']}\n{users[counter]['url']}",
                                   users[counter]['attachment'])
                     write_message(authorize, sender_id, 'Дальше?')
                     counter += 1
 
                 elif counter >= len(users) and counter != 0:
-                    write_message(authorize, sender_id, 'База данных закончилась. Смотрим заново?')
+                    write_message(authorize, sender_id, 'База данных закончилась. Смотрим заново? Смотрим избранное?'
+                                                        '(смотреть избранное)')
 
                 else:
                     write_message(authorize, sender_id, "Я вас не понимаю...")

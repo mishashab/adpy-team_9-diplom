@@ -16,7 +16,7 @@ class VKinder:
         else:
             sex = 0
 
-        result = self.session.users.search(count=5, blacklisted_by_me=0, fields=['photo_id', 'sex', 'bdate', 'city'],
+        result = self.session.users.search(count=9, blacklisted_by_me=0, fields=['photo_id', 'sex', 'bdate', 'city'],
                                            city=user_param[5], sex=sex,
                                            age_from=user_param[3], age_to=user_param[3], has_photo=1,
                                            is_closed=False, can_access_closed=True)['items']
