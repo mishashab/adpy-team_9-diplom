@@ -52,7 +52,7 @@ def main():
     user_session = vk_api.VkApi(token=user_token)
     session = user_session.get_api()
 
-    conn = psycopg2.connect(database="course_w", user="postgres", password="")
+    conn = psycopg2.connect(database="course_w", user="postgres", password="netologyAL")
     with conn.cursor() as cur:
         # print(DB.drop_table(cur)) # если нужно почистить базу даных
         print(DB.create_db(cur))
@@ -88,8 +88,8 @@ def main():
                     else:
                         print('ask_aser НЕ добавлен в базу')
 
-                else:
-                    print('ask_user присутствует в базе')
+                # else:
+                #     print('ask_user присутствует в базе')
 
                 if reseived_message.lower() == "привет":
                     print(f'Пользователь = {DB.get_ask_user_data(cur, sender_id)}')

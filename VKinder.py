@@ -16,10 +16,11 @@ class VKinder:
         else:
             sex = 0
 
-        result = self.session.users.search(count=9, blacklisted_by_me=0, fields=['photo_id', 'sex', 'bdate', 'city'],
+        result = self.session.users.search(count=1000, blacklisted_by_me=0, fields=['photo_id', 'sex', 'bdate', 'city',
+                                                                                  'is_closed'],
                                            city=user_param[5], sex=sex,
-                                           age_from=user_param[3], age_to=user_param[3], has_photo=1,
-                                           is_closed=False, can_access_closed=True)['items']
+                                           age_from=user_param[3], age_to=user_param[3], has_photo=1,)['items']
+        pprint(result)
         return result
 
     def _find_photo(self, user_id):
@@ -39,10 +40,11 @@ class VKinder:
         search_users_dict = self._search(user_param)
         find_users = list()
         for fined_user in search_users_dict:
-            attachment = self._find_photo(fined_user['id'])
-            find_users.append({'first_name': fined_user['first_name'], 'last_name': fined_user['last_name'],
-                               'url': f"https://vk.com/id{fined_user['id']}",
-                               'attachment': attachment, 'id': fined_user['id']})
+            if not fined_user['is_closed']: #смотрим закрыт ли от нас пользователь
+                attachment = self._find_photo(fined_user['id'])
+                find_users.append({'first_name': fined_user['first_name'], 'last_name': fined_user['last_name'],
+                                   'url': f"https://vk.com/id{fined_user['id']}",
+                                   'attachment': attachment, 'id': fined_user['id']})
 
         # pprint(search_users_dict)
         return find_users
