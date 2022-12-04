@@ -53,7 +53,7 @@ def main():
     user_session = vk_api.VkApi(token=user_token)
     session = user_session.get_api()
 
-    conn = psycopg2.connect(database="course_w", user="postgres", password="netologyAL")
+    conn = psycopg2.connect(database="course_w", user="postgres", password="")
     with conn.cursor() as cur:
         # print(DB.drop_table(cur)) # если нужно почистить базу даных
         print(DB.create_db(cur))
@@ -100,7 +100,7 @@ def main():
                                                         f"Ваши параметры:\nГород: {ask_user[4]}\n"
                                                         f"Пол: {ask_user[6]}\nВозраст: {ask_user[3]}\n"
                                                         f"Поиск или посмотрим базу? Или смотрим избранное?"
-                                                        f"(смотреть избраноное)")
+                                                        f"(поиск\смотрим\смотреть избраноное)")
 
                 elif reseived_message.lower() in ['смотреть избранное']:
                     if DB.get_favourites(cur, sender_id):
@@ -143,9 +143,8 @@ def main():
                     if DB.check_find_user(cur, ask_user[0]): # проверяет наличие базы
                         if counter < DB.count_db(cur)[0]:
                             flag = True
-                            while flag and counter < DB.count_db(cur)[0]:
+                            while flag and counter < DB.count_db(cur)[0]: #если вдруг встретили избранного
                                 db_source = DB.get_find_users(cur, sender_id, counter)
-                                print("WHILE")
                                 if db_source:
                                     users = {'id': db_source[0],
                                              'name': f'{db_source[1]} {db_source[2]}',
@@ -155,7 +154,6 @@ def main():
                                                   users['attachment'])
                                     write_message(authorize, sender_id, 'Дальше? или в избранное?(да/в избранное)')
                                     flag = False
-                                    print("IF")
                                 counter += 1
                         else:
                             write_message(authorize, sender_id, 'Мы посмотрели всё! Заново? (да/смотреть избранное)')
