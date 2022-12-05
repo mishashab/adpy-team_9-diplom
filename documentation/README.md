@@ -20,7 +20,7 @@
 ```python
 pip install -r requirements.txt
 ```
-5. Для работы программы нужна база данных. Создадим базу postgre SQL:
+5. Для работы программы нужна база данных. Создадим базу postgreSQL:
 ```console
 createdb -U postgres course_w
 ```
