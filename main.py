@@ -91,7 +91,7 @@ def main():
 
     conn = psycopg2.connect(database="course_w", user="postgres", password="")
     with conn.cursor() as cur:
-        # print(DB.drop_table(cur))
+        # print(DB.drop_table(cur)) #если нужно сбросить БД
         print(DB.create_db(cur))
 
         counter = 1
@@ -162,7 +162,7 @@ def main():
                                     print('Что-то пошло не так...')
                             else:
                                 write_message(authorize, sender_id, "База данных не пустая. Посмотрим?(да/смотреть "
-                                                                    "избранное/Очистить)")
+                                                                    "избранное")
 
                         elif reсeived_message.lower() in ['смотрим', 'смотреть', 'просмотр', 'да', 'дальше']:
 
