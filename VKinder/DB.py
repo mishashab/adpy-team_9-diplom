@@ -28,7 +28,7 @@ def create_db(cur):
         f_first_name VARCHAR(40) NOT NULL,
         f_last_name VARCHAR(40) NOT NULL,
         user_url VARCHAR(40) NOT NULL UNIQUE,
-        favourites BOOLEAN,
+        favourites INTEGER,
         iterator SERIAL
     );
     ''')
@@ -69,9 +69,9 @@ def get_ask_user_data(cur, user_id):
 def add_find_users(cur, f_user_id, user_id, f_first_name, f_last_name, user_url):
     '''Добавляет в базу данных всех найденных людей'''
     cur.execute("""
-        INSERT INTO find_users(f_user_id, user_id, f_first_name, f_last_name, user_url)
-        VALUES (%s, %s, %s, %s, %s);
-        """, (f_user_id, user_id, f_first_name, f_last_name, user_url))
+        INSERT INTO find_users(f_user_id, user_id, f_first_name, f_last_name, user_url, favourites)
+        VALUES (%s, %s, %s, %s, %s, %s);
+        """, (f_user_id, user_id, f_first_name, f_last_name, user_url, 0))
     cur.execute('''
         SELECT * FROM find_users
         WHERE f_user_id = %s;
@@ -93,7 +93,7 @@ def get_find_users(cur, user_id, iterator):
     '''получаем данные из базы о найденных пользователях'''
     cur.execute('''
         SELECT f_user_id, f_first_name, f_last_name, user_url FROM find_users
-        WHERE user_id = %s AND favourites IS NOT true AND iterator = %s;
+        WHERE user_id = %s AND favourites < 1 AND iterator = %s;
     ''', (user_id, iterator))
     return cur.fetchone()
 
@@ -120,15 +120,15 @@ def add_find_users_photos(cur, f_user_id, photo_str):
     return cur.fetchone()
 
 
-def add_favourites(cur, f_user_id):
+def add_favourites(cur, iterator, flag):
     '''Добавляет в список избранных'''
     cur.execute('''
-        UPDATE find_users SET favourites = %s WHERE f_user_id = %s;
-    ''', ('true', f_user_id))
+        UPDATE find_users SET favourites = %s WHERE iterator = %s;
+    ''', (flag, iterator))
     cur.execute('''
         SELECT favourites FROM find_users
-        WHERE f_user_id = %s;
-    ''', (f_user_id,))
+        WHERE iterator = %s;
+    ''', (iterator,))
     return cur.fetchone()
 
 
@@ -136,8 +136,8 @@ def get_favourites(cur, user_id):
     '''Выгружает из базы данных список избранных'''
     cur.execute('''
         SELECT f_user_id, f_first_name, f_last_name, user_url FROM find_users
-        WHERE user_id = %s AND favourites is true;
-    ''', (user_id,))
+        WHERE user_id = %s AND favourites = %s;
+    ''', (user_id, 1))
     return cur.fetchall()
 
 
@@ -147,3 +147,4 @@ def count_db(cur):
         SELECT COUNT(user_id) FROM find_users;
     ''')
     return cur.fetchone()
+
