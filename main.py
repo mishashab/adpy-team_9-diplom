@@ -164,7 +164,7 @@ def main():
     conn = psycopg2.connect(database="course_w", user="postgres",
                             password="")
     with conn.cursor() as cur:
-        # print(DB.drop_table(cur)) #если нужно сбросить БД
+        print(DB.drop_table(cur)) #если нужно сбросить БД
         print(DB.create_db(cur))
 
         counter = 1
@@ -222,8 +222,8 @@ def main():
                                           f"{ask_user[3]}\n",
                                           msg_keyboard)
 
-                        elif received_message in ['Просмотреть избранное',
-                                                  'Избранное']:
+                        elif received_message.lower() in ['просмотреть избранное',
+                                                  'избранное']:
                             if DB.get_favourites(cur, sender_id):
                                 db_source = DB.get_favourites(cur, sender_id)
                                 favourites = data_conversion(db_source, cur)
@@ -270,10 +270,10 @@ def main():
                                               sender_id,
                                               "База данных уже заполнена",
                                               msg_keyboard)
-                        elif received_message in ['Просмотреть анкеты',
-                                                  'Вернуться к подбору',
-                                                  'Продолжить подбор',
-                                                  'Начать подбор']:
+                        elif received_message.lower() in ['просмотреть анкеты',
+                                                  'вернуться к подбору',
+                                                  'продолжить подбор',
+                                                  'начать подбор']:
 
                             if DB.check_find_user(cur, ask_user[0]):
                                 counter = get_from_database(cur, authorize,
