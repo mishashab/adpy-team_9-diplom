@@ -164,7 +164,7 @@ def main():
     conn = psycopg2.connect(database="course_w", user="postgres",
                             password="")
     with conn.cursor() as cur:
-        print(DB.drop_table(cur)) #если нужно сбросить БД
+        # print(DB.drop_table(cur)) #если нужно сбросить БД
         print(DB.create_db(cur))
 
         counter = 1
