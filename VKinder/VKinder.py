@@ -20,7 +20,7 @@ class VKinder:
         print('Выполнен первоначальный поиск')
         return result
 
-    def _find_photo(self, user_id):
+    def find_photo(self, user_id):
         '''Подбираем фото'''
         get_photo = self.session.photos.get(owner_id=user_id, album_id='profile', extended=1, photo_sizes=1)['items']
         photo_list = sorted(get_photo, key=lambda k: k['likes']['count'], reverse=True)
@@ -34,15 +34,5 @@ class VKinder:
     def find_user(self, user_param):
         '''выборка по параметрам'''
         search_users_dict = self._search(user_param)
-        find_users = list()
-        print("Ищем фото, формируем данные")
-        for fined_user in search_users_dict:
-            if not fined_user['is_closed']:
-                print('. ', end="")
-                attachment = self._find_photo(fined_user['id'])
-                find_users.append({'first_name': fined_user['first_name'], 'last_name': fined_user['last_name'],
-                                   'url': f"https://vk.com/id{fined_user['id']}",
-                                   'attachment': attachment, 'id': fined_user['id']})
-
-        print("\nПоиск фото окончен, данные сформированы")
-        return find_users
+        print("Поиск завершен, список сформирован")
+        return search_users_dict

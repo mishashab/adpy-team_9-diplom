@@ -109,40 +109,28 @@ def data_conversion(db_source, cur):
     return users
 
 
-def add_to_database(cur, sender_id, result):
-    """Пишет полученные данные из поиска в базу данных"""
-    for i_user in result:
-        if not DB.check_find_user(cur, i_user['id']):
-            if DB.add_find_users(cur, i_user['id'], sender_id,
-                                 i_user['first_name'],
-                                 i_user['last_name'], i_user['url']):
-                for item in i_user['attachment']:
-                    DB.add_find_users_photos(cur, i_user['id'], item)
-    return True
-
-
-def get_from_database(cur, authorize, counter, sender_id, keyboard):
-    """Достаёт данные о найденном пользователе из базы данных"""
-    if counter < DB.count_db(cur)[0]:
-        flag = True
-        while flag and counter < DB.count_db(cur)[0]:
-            db_source = DB.get_find_users(cur, sender_id, counter)
-            if db_source:
-                users = {'id': db_source[0],
-                         'name': f'{db_source[1]} {db_source[2]}',
-                         'url': db_source[3],
-                         'attachment': get_str(DB.get_photo(cur, db_source[0]))}
-                write_message(authorize, sender_id,
-                              f"{users['name']}\n{users['url']}",
-                              keyboard,
-                              users['attachment'])
-                flag = False
+def get_find_user(cur, authorize, result, counter, sender_id, v_kinder, keyboard):
+    '''Выводим найденных пользователей'''
+    flag = True
+    while flag and counter < len(result):
+        if not DB.check_find_user(cur, sender_id, result[counter]['id']) and not result[counter]['is_closed']:
+            flag = False
+            result[counter]['attachment'] = v_kinder.find_photo(result[counter]['id'])
+            write_message(authorize,
+                          sender_id,
+                          f"{result[counter]['first_name']} {result[counter]['last_name']}\n"
+                          f"https://vk.com/id{result[counter]['id']}",
+                          keyboard,
+                          ','.join(result[counter]['attachment']))
             counter += 1
-    else:
-        write_message(authorize, sender_id,
-                      'Мы посмотрели всё! Заново?',
-                      keyboard)
-        counter = 1
+        else:
+            counter += 1
+
+        if counter >= len(result):
+            write_message(authorize, sender_id,
+                          'Мы посмотрели всё! Заново?',
+                          keyboard)
+            counter = 0
     return counter
 
 
@@ -162,13 +150,14 @@ def main():
     longpoll, session, authorize = connection()
 
     conn = psycopg2.connect(database="course_w", user="postgres",
-                            password="")
+                            password="netologyAL")
     with conn.cursor() as cur:
         # print(DB.drop_table(cur)) #если нужно сбросить БД
         print(DB.create_db(cur))
 
-        counter = 1
+        counter = 0
         ask_user = dict()
+        result = dict()
         flag = True
         while flag:
             try:
@@ -245,51 +234,31 @@ def main():
                         elif received_message.lower() in ['ищем', 'поиск',
                                                           'выполнить',
                                                           'выполнить поиск',
-                                                          'заполнить базу']:
-
-                            if not DB.check_find_user(cur, sender_id):
-
-                                write_message(authorize,
-                                              sender_id,
-                                              f"Ищу...",
-                                              msg_keyboard)
-
+                                                          'дальше']:
+                            if not result:
                                 v_kinder = VKinder(longpoll, session)
                                 result = v_kinder.find_user(ask_user)
-
-                                if add_to_database(cur, ask_user[0], result):
-                                    print('Добавлено в базу')
-                                    conn.commit()
-                                    write_message(authorize, sender_id,
-                                                  "Данные записаны в базу",
-                                                  msg_keyboard)
-                                else:
-                                    print('Что-то пошло не так...')
-                            else:
-                                write_message(authorize,
-                                              sender_id,
-                                              "База данных уже заполнена",
-                                              msg_keyboard)
-                        elif received_message.lower() in ['просмотреть анкеты',
-                                                  'вернуться к подбору',
-                                                  'продолжить подбор',
-                                                  'начать подбор']:
-
-                            if DB.check_find_user(cur, ask_user[0]):
-                                counter = get_from_database(cur, authorize,
-                                                            counter, sender_id,
-                                                            msg_keyboard)
-                            else:
-                                print('База пустая')
-                                write_message(authorize,
-                                              sender_id,
-                                              "База пустая, выполните поиск(Поиск)",
-                                              msg_keyboard)
+                            counter = get_find_user(cur,
+                                                    authorize,
+                                                    result,
+                                                    counter,
+                                                    sender_id,
+                                                    v_kinder,
+                                                    msg_keyboard)
 
                         elif received_message.lower() in ['в избранное',
                                                           'добавить в избранное']:
 
-                            if DB.add_favourites(cur, counter - 1, 1):
+                            if DB.add_favourites(cur,
+                                                 result[counter - 1]['id'],
+                                                 sender_id,
+                                                 result[counter - 1]['first_name'],
+                                                 result[counter - 1]['last_name'],
+                                                 f"https://vk.com/id{result[counter - 1]['id']}",
+                                                 1):
+                                for photo in result[counter - 1]['attachment']:
+                                    if DB.add_find_users_photos(cur, result[counter - 1]['id'], photo):
+                                        print(f"{photo} для user {result[counter - 1]['last_name']} успешно добавлено")
                                 conn.commit()
                                 print('Добавлено в избранное')
                                 write_message(authorize,
@@ -300,7 +269,13 @@ def main():
                         elif received_message.lower() in ['в черный', 'чёрный',
                                                           'нет', 'в чс']:
 
-                            if DB.add_favourites(cur, counter - 1, 2):
+                            if DB.add_favourites(cur,
+                                                 result[counter - 1]['id'],
+                                                 sender_id,
+                                                 result[counter - 1]['first_name'],
+                                                 result[counter - 1]['last_name'],
+                                                 f"https://vk.com/id{result[counter - 1]['id']}",
+                                                 0):
                                 conn.commit()
                                 print('Добавлено в чёрный список')
                                 write_message(authorize,
