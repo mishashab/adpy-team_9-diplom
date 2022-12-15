@@ -14,7 +14,7 @@ class VKinder:
             sex = 0
 
         result = self.session.users.search(count=1000, blacklisted_by_me=0, fields=['photo_id', 'sex', 'bdate', 'city',
-                                                                                  'is_closed'],
+                                                                                    'is_closed'],
                                            city=user_param[5], sex=sex,
                                            age_from=user_param[3], age_to=user_param[3], has_photo=1,)['items']
         print('Выполнен первоначальный поиск')

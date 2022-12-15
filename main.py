@@ -150,7 +150,7 @@ def main():
     longpoll, session, authorize = connection()
 
     conn = psycopg2.connect(database="course_w", user="postgres",
-                            password="netologyAL")
+                            password="")
     with conn.cursor() as cur:
         # print(DB.drop_table(cur)) #если нужно сбросить БД
         print(DB.create_db(cur))
