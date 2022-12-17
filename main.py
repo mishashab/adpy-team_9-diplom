@@ -1,4 +1,4 @@
-from token_id import bot_token, user_token
+from VKinder.token_id import bot_token, user_token
 from VKinder.VKinder import VKinder
 from VKinder import DB
 
@@ -8,7 +8,6 @@ import vk_api
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.utils import get_random_id
-import psycopg2
 
 
 def create_keyboard(response):
@@ -98,22 +97,22 @@ def get_str(url_photos):
     return str_photo
 
 
-def data_conversion(db_source, cur):
+def data_conversion(db_source):
     """Преобразует данные из базы данных в нужный для бота вид"""
     users = list()
     for item in db_source:
         users.append({'id': item[0],
                       'name': f'{item[1]} {item[2]}',
                       'url': item[3],
-                      'attachment': get_str(DB.get_photo(cur, item[0]))})
+                      'attachment': get_str(DB.get_photo(item[0]))})
     return users
 
 
-def get_find_user(cur, authorize, result, counter, sender_id, v_kinder, keyboard):
+def get_find_user(authorize, result, counter, sender_id, v_kinder, keyboard):
     '''Выводим найденных пользователей'''
     flag = True
     while flag and counter < len(result):
-        if not DB.check_find_user(cur, sender_id, result[counter]['id']) and not result[counter]['is_closed']:
+        if not DB.check_find_user(sender_id, result[counter]['id']) and not result[counter]['is_closed']:
             flag = False
             result[counter]['attachment'] = v_kinder.find_photo(result[counter]['id'])
             write_message(authorize,
@@ -149,162 +148,151 @@ def main():
 
     longpoll, session, authorize = connection()
 
-    conn = psycopg2.connect(database="course_w", user="postgres",
-                            password="")
-    with conn.cursor() as cur:
-        # print(DB.drop_table(cur)) #если нужно сбросить БД
-        print(DB.create_db(cur))
+    # print(DB.drop_table()) #если нужно сбросить БД
+    print(DB.create_db())
 
-        counter = 0
-        ask_user = dict()
-        result = dict()
-        flag = True
-        while flag:
-            try:
-                for event in longpoll.listen():
-                    if event.type == VkEventType.MESSAGE_NEW and event.to_me \
-                            and event.text:
-                        received_message = event.text
-                        msg_keyboard = create_keyboard(event.text)
-                        sender_id = event.user_id
+    counter = 0
+    ask_user = dict()
+    result = dict()
+    flag = True
+    sender_id = 0
+    while flag:
+        try:
+            for event in longpoll.listen():
+                if event.type == VkEventType.MESSAGE_NEW and event.to_me \
+                        and event.text:
+                    received_message = event.text
+                    msg_keyboard = create_keyboard(event.text)
+                    sender_id = event.user_id
 
-                        if not DB.get_ask_user_data(cur, sender_id):
-                            print('ask_user в базе отсутствует')
-                            user_info = session.account.getProfileInfo(
-                                user_id=sender_id)
-                            user_info['age'] = calculate_age(user_info['bdate'])
-                            if user_info['sex'] == 2:
-                                user_info['gender'] = 'Мужской'
-                            elif user_info['sex'] == 1:
-                                user_info['gender'] = 'Женский'
-                            else:
-                                user_info['gender'] = 'Пол не указан'
+                    if not DB.get_ask_user_data(sender_id):
+                        print('ask_user в базе отсутствует')
+                        user_info = session.account.getProfileInfo(
+                            user_id=sender_id)
+                        user_info['age'] = calculate_age(user_info['bdate'])
+                        if user_info['sex'] == 2:
+                            user_info['gender'] = 'Мужской'
+                        elif user_info['sex'] == 1:
+                            user_info['gender'] = 'Женский'
+                        else:
+                            user_info['gender'] = 'Пол не указан'
 
-                            if DB.add_ask_user(cur, user_info['id'],
-                                               user_info['first_name'],
-                                               user_info['last_name'],
-                                               user_info['age'],
-                                               user_info['home_town'],
-                                               user_info['city']['id'],
-                                               user_info['gender']):
-                                conn.commit()
-                                print('ask_user добавлен в базу')
-                            else:
-                                print('ask_user НЕ добавлен в базу')
+                        if DB.add_ask_user(user_info['id'],
+                                           user_info['first_name'],
+                                           user_info['last_name'],
+                                           user_info['age'],
+                                           user_info['home_town'],
+                                           user_info['city']['id'],
+                                           user_info['gender']):
+                            print('ask_user добавлен в базу')
+                        else:
+                            print('ask_user НЕ добавлен в базу')
 
-                        if received_message.lower() in ['привет',
-                                                        'хай',
-                                                        'Привет',
-                                                        'Начать',
-                                                        'К подбору']:
-                            print(
-                                f'Пользователь = '
-                                f'{DB.get_ask_user_data(cur, sender_id)}')
+                    if received_message.lower() in ['привет',
+                                                    'хай',
+                                                    'Привет',
+                                                    'Начать',
+                                                    'К подбору']:
+                        print(
+                            f'Пользователь = '
+                            f'{DB.get_ask_user_data(sender_id)}')
 
-                            ask_user = DB.get_ask_user_data(cur, sender_id)
-                            write_message(authorize,
-                                          sender_id,
-                                          f"Доброго времени суток, "
-                                          f"{ask_user[1]}!\nВаши параметры:\n"
-                                          f"Город: {ask_user[4]}\nПол: "
-                                          f"{ask_user[6]}\nВозраст: "
-                                          f"{ask_user[3]}\n",
-                                          msg_keyboard)
+                        ask_user = DB.get_ask_user_data(sender_id)
+                        write_message(authorize,
+                                      sender_id,
+                                      f"Доброго времени суток, "
+                                      f"{ask_user[1]}!\nВаши параметры:\n"
+                                      f"Город: {ask_user[4]}\nПол: "
+                                      f"{ask_user[6]}\nВозраст: "
+                                      f"{ask_user[3]}\n",
+                                      msg_keyboard)
 
-                        elif received_message.lower() in ['просмотреть избранное',
-                                                  'избранное']:
-                            if DB.get_favourites(cur, sender_id):
-                                db_source = DB.get_favourites(cur, sender_id)
-                                favourites = data_conversion(db_source, cur)
-                                for item in favourites:
-                                    write_message(authorize,
-                                                  sender_id,
-                                                  f"{item['name']}\n"
-                                                  f"{item['url']}",
-                                                  msg_keyboard,
-                                                  item['attachment'])
-                                write_message(authorize, sender_id,
-                                              "Напоминаю о красоте.",
-                                              msg_keyboard)
-                            else:
-                                write_message(authorize, sender_id,
-                                              f"В избранном нет никого.",
-                                              msg_keyboard)
-
-                        elif received_message.lower() in ['ищем', 'поиск',
-                                                          'выполнить',
-                                                          'выполнить поиск',
-                                                          'дальше']:
-                            if not result:
-                                v_kinder = VKinder(longpoll, session)
-                                result = v_kinder.find_user(ask_user)
-                            counter = get_find_user(cur,
-                                                    authorize,
-                                                    result,
-                                                    counter,
-                                                    sender_id,
-                                                    v_kinder,
-                                                    msg_keyboard)
-
-                        elif received_message.lower() in ['в избранное',
-                                                          'добавить в избранное']:
-
-                            if DB.add_favourites(cur,
-                                                 result[counter - 1]['id'],
-                                                 sender_id,
-                                                 result[counter - 1]['first_name'],
-                                                 result[counter - 1]['last_name'],
-                                                 f"https://vk.com/id{result[counter - 1]['id']}",
-                                                 1):
-                                for photo in result[counter - 1]['attachment']:
-                                    if DB.add_find_users_photos(cur, result[counter - 1]['id'], photo):
-                                        print(f"{photo} для user {result[counter - 1]['last_name']} успешно добавлено")
-                                conn.commit()
-                                print('Добавлено в избранное')
+                    elif received_message.lower() in ['просмотреть избранное',
+                                              'избранное']:
+                        if DB.get_favourites(sender_id):
+                            db_source = DB.get_favourites(sender_id)
+                            favourites = data_conversion(db_source)
+                            for item in favourites:
                                 write_message(authorize,
                                               sender_id,
-                                              "Тян на заметке",
-                                              msg_keyboard)
-
-                        elif received_message.lower() in ['в черный', 'чёрный',
-                                                          'нет', 'в чс']:
-
-                            if DB.add_favourites(cur,
-                                                 result[counter - 1]['id'],
-                                                 sender_id,
-                                                 result[counter - 1]['first_name'],
-                                                 result[counter - 1]['last_name'],
-                                                 f"https://vk.com/id{result[counter - 1]['id']}",
-                                                 0):
-                                conn.commit()
-                                print('Добавлено в чёрный список')
-                                write_message(authorize,
-                                              sender_id,
-                                              "Больше не встретится)",
-                                              msg_keyboard)
-                        elif received_message == 'Закончить':
-                            write_message(authorize,
-                                          sender_id,
-                                          f"Подбор окончен",
-                                          msg_keyboard)
-                        elif received_message == 'Пока, бро!':
-                            write_message(authorize,
-                                          sender_id,
-                                          f"Сладких котёнок",
+                                              f"{item['name']}\n"
+                                              f"{item['url']}",
+                                              msg_keyboard,
+                                              item['attachment'])
+                            write_message(authorize, sender_id,
+                                          "Напоминаю о красоте.",
                                           msg_keyboard)
                         else:
                             write_message(authorize, sender_id,
-                                          "Я вас не понимаю...",
+                                          f"В избранном нет никого.",
                                           msg_keyboard)
 
-            except Exception as exception:
-                print(exception)
-                time.sleep(5)
-                if sender_id:
-                    write_message(authorize, sender_id, "Бот на связи!",
-                                  msg_keyboard)
+                    elif received_message.lower() in ['ищем', 'поиск',
+                                                      'выполнить',
+                                                      'выполнить поиск',
+                                                      'дальше']:
+                        v_kinder = VKinder(longpoll, session)
+                        if not result:
+                            result = v_kinder.find_user(ask_user)
+                        counter = get_find_user(authorize,
+                                                result,
+                                                counter,
+                                                sender_id,
+                                                v_kinder,
+                                                msg_keyboard)
 
-    conn.close()
+                    elif received_message.lower() in ['в избранное',
+                                                      'добавить в избранное']:
+
+                        if DB.add_favourites(result[counter - 1]['id'],
+                                             sender_id,
+                                             result[counter - 1]['first_name'],
+                                             result[counter - 1]['last_name'],
+                                             f"https://vk.com/id{result[counter - 1]['id']}",
+                                             1):
+                            for photo in result[counter - 1]['attachment']:
+                                if DB.add_find_users_photos(result[counter - 1]['id'], photo):
+                                    print(f"{photo} для user {result[counter - 1]['last_name']} успешно добавлено")
+                            print('Добавлено в избранное')
+                            write_message(authorize,
+                                          sender_id,
+                                          "Тян на заметке",
+                                          msg_keyboard)
+
+                    elif received_message.lower() in ['в черный', 'чёрный',
+                                                      'нет', 'в чс']:
+
+                        if DB.add_favourites(result[counter - 1]['id'],
+                                             sender_id,
+                                             result[counter - 1]['first_name'],
+                                             result[counter - 1]['last_name'],
+                                             f"https://vk.com/id{result[counter - 1]['id']}",
+                                             0):
+                            print('Добавлено в чёрный список')
+                            write_message(authorize,
+                                          sender_id,
+                                          "Больше не встретится)",
+                                          msg_keyboard)
+                    elif received_message == 'Закончить':
+                        write_message(authorize,
+                                      sender_id,
+                                      f"Подбор окончен",
+                                      msg_keyboard)
+                    elif received_message == 'Пока, бро!':
+                        write_message(authorize,
+                                      sender_id,
+                                      f"Сладких котёнок",
+                                      msg_keyboard)
+                    else:
+                        write_message(authorize, sender_id,
+                                      "Я вас не понимаю...",
+                                      msg_keyboard)
+
+        except Exception as exception:
+            print(exception)
+            time.sleep(5)
+            if sender_id:
+                write_message(authorize, sender_id, "Бот на связи!", create_keyboard("привет"))
 
 
 if __name__ == '__main__':
