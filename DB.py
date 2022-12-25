@@ -1,5 +1,5 @@
 import psycopg2
-from VKinder.token_id import database, user, password
+from token_id import database, user, password
 
 
 def db_connect():

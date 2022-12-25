@@ -12,10 +12,10 @@
     ![Enable message](EnableMsg.jpg)
     * Перейти в Управление -> Сообщения -> Настройки для бота, включить "Возможности ботов"
     ![Enable Bot Opportunities](BotOpportunities.jpg)
-    * Перейти  Управление -> Работа с API, скопировать созданный ключ и сохранить в VKinder/token_id.py в переменную *bot_token*
+    * Перейти  Управление -> Работа с API, скопировать созданный ключ и сохранить в token_id.py в переменную *bot_token*
 3. Далее необходимо создать токен для пользователя, который будет общаться с ботом:
     * Получить токен для ВК можно выполнив [инструкцию](https://docs.google.com/document/d/1_xt16CMeaEir-tWLbUFyleZl6woEdJt-7eyva1coT3w/edit?usp=sharing)
-    * Полученый токен сохранить в переменную *user_token* VKinder/token_id.py
+    * Полученый токен сохранить в переменную *user_token* token_id.py
 4. Установим зависимости из файла requirements.txt командой 
 ```python
 pip install -r requirements.txt

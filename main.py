@@ -1,175 +1,13 @@
-from VKinder.token_id import bot_token, user_token
+from DB.token_id import bot_token, user_token
 from VKinder.VKinder import VKinder
-from VKinder import DB
+import DB
+from keyboard import CreateKeyboard
 
 from datetime import date
 import time
 import vk_api
-from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.utils import get_random_id
-
-
-class CreateKeyboard:
-    def __init__(self):
-        self.btn_search = ['Поиск', VkKeyboardColor.SECONDARY]
-        self.btn_view = ['Просмотреть избранное', VkKeyboardColor.PRIMARY]
-        self.btn_finish = ['Закончить', VkKeyboardColor.SECONDARY]
-        self.btn_next = ['Дальше', VkKeyboardColor.PRIMARY]
-        self.btn_favorite = ['В избранное', VkKeyboardColor.POSITIVE]
-        self.btn_black = ['В ЧС', VkKeyboardColor.NEGATIVE]
-        self.btn_bro = ['Пока, бро!', VkKeyboardColor.SECONDARY]
-        self.btn_hi = ['Привет', VkKeyboardColor.POSITIVE]
-
-    def _create_button(self, buttons):
-        '''Создаем кнопку'''
-        keyboard = VkKeyboard(one_time=True)
-        for button in buttons:
-            if button[2] == 'True':
-                keyboard.add_line()
-            keyboard.add_button(button[0], color=button[1])
-        return keyboard.get_keyboard()
-
-    def hi(self):
-
-        return self._create_button([self.btn_search + ['False'],
-                                    self.btn_view + ['True'],
-                                    self.btn_finish + ['True']])
-
-    def search(self):
-        return self._create_button([self.btn_next + ['False'],
-                                    self.btn_favorite + ['True'],
-                                    self.btn_view + ['False'],
-                                    self.btn_black + ['True'],
-                                    self.btn_finish + ['True']])
-
-    def view(self):
-        return self._create_button([self.btn_next + ['False'],
-                                    self.btn_finish + ['True']])
-
-    def favorite(self):
-        return self._create_button([self.btn_next + ['False'],
-                                    self.btn_view + ['True'],
-                                    self.btn_finish + ['True']])
-
-    def finish(self):
-        return self._create_button([self.btn_bro + ['False'],
-                                    self.btn_next + ['True']])
-
-    def bro(self):
-        return self._create_button([self.btn_hi + ['False']])
-
-
-# def create_button(keyboard, buttons):
-#     '''Создаем кнопку'''
-#     for button in buttons:
-#         if button[2] == 'True':
-#             keyboard.add_line()
-#         keyboard.add_button(button[0], color=button[1])
-#
-#
-# def create_keyboard(response):
-#     """Создание клавиатуры"""
-#     keyboard = VkKeyboard(one_time=True)
-#     btn_search = ['Поиск', VkKeyboardColor.SECONDARY]
-#     btn_view = ['Просмотреть избранное', VkKeyboardColor.PRIMARY]
-#     btn_finish = ['Закончить', VkKeyboardColor.SECONDARY]
-#     btn_next = ['Дальше', VkKeyboardColor.PRIMARY]
-#     btn_favorite = ['В избранное', VkKeyboardColor.POSITIVE]
-#     btn_black = ['В ЧС', VkKeyboardColor.NEGATIVE]
-#     btn_bro = ['Пока, бро!', VkKeyboardColor.SECONDARY]
-#     btn_hi = ['Привет', VkKeyboardColor.POSITIVE]
-#     if response in ['привет', 'хай', 'привет', 'к подбору']:
-#         create_button(keyboard,
-#                       [btn_search + ['False'], # прибавляю, потому что append дает ошибку
-#                        btn_view + ['True'],
-#                        btn_finish + ['True']])
-#     elif response in ['ищем', 'поиск', 'выполнить', 'выполнить поиск', 'дальше']:
-#         create_button(keyboard,
-#                       [btn_next + ['False'],
-#                        btn_favorite + ['True'],
-#                        btn_view + ['False'],
-#                        btn_black + ['True'],
-#                        btn_finish + ['True']])
-#     elif response in ['просмотреть избранное', 'избранное']:
-#         create_button(keyboard,
-#                       [btn_next + ['False'],
-#                        btn_finish + ['True']])
-#     elif response in ['в избранное', 'добавить в избранное', 'в черный', 'чёрный', 'нет', 'в чс']:
-#         create_button(keyboard,
-#                       [btn_next + ['False'],
-#                        btn_view + ['True'],
-#                        btn_finish + ['True']])
-#     elif response == 'закончить':
-#         create_button(keyboard,
-#                       [btn_bro + ['False'],
-#                        btn_next + ['True']])
-#     else:
-#         create_button(keyboard,
-#                       [btn_hi + ['False']])
-#
-#     keyboard = keyboard.get_keyboard()
-#     return keyboard
-
-# def create_keyboard(response):
-#     """Создание клавиатуры"""
-#     keyboard = VkKeyboard(one_time=True)
-#     if response in ['привет', 'хай', 'Привет', 'К подбору']:
-#         keyboard.add_button('Заполнить базу')
-#         keyboard.add_line()
-#         keyboard.add_button('Просмотреть избранное',
-#                             color=VkKeyboardColor.POSITIVE)
-#         keyboard.add_line()
-#         keyboard.add_button('Просмотреть анкеты',
-#                             color=VkKeyboardColor.POSITIVE)
-#         keyboard.add_line()
-#         keyboard.add_button('Закончить')
-#     elif response in ['Заполнить базу']:
-#         keyboard.add_button('Просмотреть избранное',
-#                             color=VkKeyboardColor.POSITIVE)
-#         keyboard.add_line()
-#         keyboard.add_button('Просмотреть анкеты',
-#                             color=VkKeyboardColor.POSITIVE)
-#         keyboard.add_line()
-#         keyboard.add_button('Закончить')
-#     elif response in ['Просмотреть избранное']:
-#         keyboard.add_button('Просмотреть анкеты',
-#                             color=VkKeyboardColor.POSITIVE)
-#         keyboard.add_line()
-#         keyboard.add_button('Закончить')
-#     elif response in ['Просмотреть анкеты', 'Вернуться к подбору', 'Дизлайк',
-#                       'Продолжить подбор', 'В избранное', 'Начать подбор']:
-#         keyboard.add_button('В избранное', color=VkKeyboardColor.POSITIVE)
-#         keyboard.add_button('В ЧС', color=VkKeyboardColor.NEGATIVE)
-#         keyboard.add_line()
-#         keyboard.add_button('Продолжить подбор')
-#         keyboard.add_line()
-#         keyboard.add_button('Закончить')
-#
-#     elif response in ['Лайк', 'Получить фото', 'Написать']:
-#         keyboard.add_button('Вернуться к подбору')
-#         keyboard.add_line()
-#         keyboard.add_button('Закончить')
-#
-#     elif response in ['Лайк', 'Получить фото', 'Написать']:
-#         keyboard.add_button('Получить фото', color=VkKeyboardColor.POSITIVE)
-#         keyboard.add_button('Написать', color=VkKeyboardColor.POSITIVE)
-#         keyboard.add_line()
-#         keyboard.add_button('Вернуться к подбору')
-#
-#     elif response == 'Закончить':
-#         keyboard.add_button('Пока, бро!')
-#         keyboard.add_line()
-#         keyboard.add_button('К подбору')
-#
-#     elif response == 'Пока, бро!':
-#         keyboard.add_button('Привет')
-#
-#     else:
-#         keyboard.add_button('Начать подбор', color=VkKeyboardColor.POSITIVE)
-#
-#     keyboard = keyboard.get_keyboard()
-#     return keyboard
 
 
 def write_message(authorize, sender, message, keyboard='', attachment=''):
@@ -394,7 +232,7 @@ def main():
             print(exception)
             time.sleep(5)
             if sender_id:
-                write_message(authorize, sender_id, "Бот на связи!")
+                write_message(authorize, sender_id, "Бот на связи!", create_k.hi())
 
 
 if __name__ == '__main__':
