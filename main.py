@@ -1,4 +1,4 @@
-from DB.token_id import bot_token, user_token
+from token_id import bot_token, user_token
 from VKinder.VKinder import VKinder
 import DB
 from keyboard import CreateKeyboard
