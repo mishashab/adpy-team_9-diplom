@@ -102,7 +102,6 @@ def main():
                 if event.type == VkEventType.MESSAGE_NEW and event.to_me \
                         and event.text:
                     received_message = event.text
-                    # msg_keyboard = create_keyboard(event.text.lower())
                     sender_id = event.user_id
 
                     if not DB.get_ask_user_data(sender_id):
